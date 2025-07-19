@@ -1,0 +1,1 @@
+Creation of a convolutional neural network tuning it based on confidence results using a predefined dataset CIFAR-10, a visual dataset, this CNN will catalog and differentiate between different images.

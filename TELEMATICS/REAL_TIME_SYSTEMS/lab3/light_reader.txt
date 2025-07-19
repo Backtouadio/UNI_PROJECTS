@@ -1,0 +1,133 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <mqueue.h>
+
+#define SHARED_MEMORY_SIZE sizeof(int)
+#define QUEUE_NAME "/light_queue"
+#define MAX_MESSAGE_SIZE 256
+
+// Shared resources
+int *sharedBrightness;
+sem_t *syncSemaphore;
+
+// Structure for messages
+struct light_message {
+    int brightness;
+    // Additional fields can be added here
+};
+
+// Function prototypes
+void *lightSensorThread(mqd_t msgQueue);
+void *lightProcessorThread(mqd_t msgQueue);
+
+int main() {
+    // Create shared memory for brightness
+    int shm_fd = shm_open("/light_brightness", O_CREAT | O_RDWR, 0666);
+    ftruncate(shm_fd, SHARED_MEMORY_SIZE);
+    sharedBrightness = mmap(NULL, SHARED_MEMORY_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+    // Initialize semaphore
+    sem_t *syncSemaphore = mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    sem_init(syncSemaphore, 1, 1);
+
+    // Create message queue
+    mqd_t msgQueue = mq_open(QUEUE_NAME, O_CREAT | O_RDWR, 0666, NULL);
+    if (msgQueue == (mqd_t)-1) {
+        perror("Error creating/opening the message queue");
+        exit(EXIT_FAILURE);
+    }
+
+    // Initialize shared brightness value
+    *sharedBrightness = 0;
+
+    // Create threads
+    pthread_t sensorThreadID, processorThreadID;
+    pthread_create(&sensorThreadID, NULL, lightSensorThread, (void *)msgQueue);
+    pthread_create(&processorThreadID, NULL, lightProcessorThread, (void *)msgQueue);
+
+    // Wait for threads to finish
+    pthread_join(sensorThreadID, NULL);
+    pthread_join(processorThreadID, NULL);
+
+    // Close and unlink resources
+    mq_close(msgQueue);
+    mq_unlink(QUEUE_NAME);
+    shm_unlink("/light_brightness");
+    sem_destroy(syncSemaphore);
+
+    return 0;
+}
+
+void *lightSensorThread(mqd_t msgQueue) {
+    struct light_message msg;
+    while (1) {
+        // Simulate reading light brightness (0 to 255 units)
+        int randomBrightness = rand() % 256;
+
+        // Acquire lock
+        sem_wait(syncSemaphore);
+
+        // Update shared brightness value
+        *sharedBrightness = randomBrightness;
+
+        // Update message brightness
+        msg.brightness = randomBrightness;
+
+        // Send message to the queue
+        if (mq_send(msgQueue, (const char *)&msg, sizeof(struct light_message), 0) == -1) {
+            perror("Error sending message to the queue");
+        }
+
+        // Release lock
+        sem_post(syncSemaphore);
+
+        // Print the current brightness
+        printf("Sensor: Light brightness read: %d\n", randomBrightness);
+
+        // Sleep for a while
+        sleep(2);
+    }
+    return NULL;
+}
+
+void *lightProcessorThread(mqd_t msgQueue) {
+    struct light_message msg;
+    while (1) {
+        // Acquire lock
+        sem_wait(syncSemaphore);
+
+        // Read shared brightness value
+        int currentBrightness = *sharedBrightness;
+
+        // Receive message from the queue
+        if (mq_receive(msgQueue, (char *)&msg, sizeof(struct light_message), NULL) == -1) {
+            perror("Error receiving message from the queue");
+        } else {
+            printf("Received message: %d\n", msg.brightness);
+        }
+
+        // Release lock
+        sem_post(syncSemaphore);
+
+        // Process the brightness (adjust range to 0-100)
+        int adjustedBrightness = (currentBrightness * 100) / 255;
+
+        // Print light state messages based on the adjusted brightness
+        if (adjustedBrightness < 30) {
+            printf("Processor: Light level is low\n");
+        } else if (adjustedBrightness >= 30 && adjustedBrightness < 70) {
+            printf("Processor: Light level is moderate\n");
+        } else {
+            printf("Processor: Light level is high\n");
+        }
+
+        // Sleep for a while
+        sleep(2);
+    }
+    return NULL;
+}

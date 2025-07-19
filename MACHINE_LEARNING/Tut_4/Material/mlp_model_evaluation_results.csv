@@ -1,0 +1,17 @@
+params,MSE,RMSE,MAE
+"{'hidden_layer_sizes': (50,), 'activation': 'tanh', 'solver': 'sgd', 'learning_rate_init': 0.01}",0.18716761524856446,0.4326287267953487,0.22269478209518634
+"{'hidden_layer_sizes': (50,), 'activation': 'tanh', 'solver': 'sgd', 'learning_rate_init': 0.001}",0.6688152070185321,0.8178112294524527,0.686453513402114
+"{'hidden_layer_sizes': (50,), 'activation': 'tanh', 'solver': 'adam', 'learning_rate_init': 0.01}",0.18532878358430446,0.430498296842513,0.19621246752748578
+"{'hidden_layer_sizes': (50,), 'activation': 'tanh', 'solver': 'adam', 'learning_rate_init': 0.001}",0.22180230785018926,0.4709589237398409,0.26525632710237973
+"{'hidden_layer_sizes': (50,), 'activation': 'relu', 'solver': 'sgd', 'learning_rate_init': 0.01}",0.1924792294165004,0.43872454845438086,0.19358360450382178
+"{'hidden_layer_sizes': (50,), 'activation': 'relu', 'solver': 'sgd', 'learning_rate_init': 0.001}",0.1931436321083631,0.43948109414212927,0.18306546860354006
+"{'hidden_layer_sizes': (50,), 'activation': 'relu', 'solver': 'adam', 'learning_rate_init': 0.01}",0.19366610041849266,0.44007510770150665,0.2486462513108955
+"{'hidden_layer_sizes': (50,), 'activation': 'relu', 'solver': 'adam', 'learning_rate_init': 0.001}",0.1796317757033563,0.42382989005420124,0.2274018257005585
+"{'hidden_layer_sizes': (100,), 'activation': 'tanh', 'solver': 'sgd', 'learning_rate_init': 0.01}",0.1786250872376673,0.4226406123855909,0.218245565082151
+"{'hidden_layer_sizes': (100,), 'activation': 'tanh', 'solver': 'sgd', 'learning_rate_init': 0.001}",0.3584315551282099,0.5986915358748693,0.4464122044062155
+"{'hidden_layer_sizes': (100,), 'activation': 'tanh', 'solver': 'adam', 'learning_rate_init': 0.01}",0.19137307699263856,0.4374620863487927,0.2329128247236555
+"{'hidden_layer_sizes': (100,), 'activation': 'tanh', 'solver': 'adam', 'learning_rate_init': 0.001}",0.18814259628545835,0.4337540735087779,0.2180638617050217
+"{'hidden_layer_sizes': (100,), 'activation': 'relu', 'solver': 'sgd', 'learning_rate_init': 0.01}",0.19699451284782635,0.4438406390224157,0.24439391726584817
+"{'hidden_layer_sizes': (100,), 'activation': 'relu', 'solver': 'sgd', 'learning_rate_init': 0.001}",0.19977813373881104,0.4469654726472852,0.22643159498940615
+"{'hidden_layer_sizes': (100,), 'activation': 'relu', 'solver': 'adam', 'learning_rate_init': 0.01}",0.18934188757979495,0.43513433279826924,0.23852595709420463
+"{'hidden_layer_sizes': (100,), 'activation': 'relu', 'solver': 'adam', 'learning_rate_init': 0.001}",0.22074737285204107,0.4698376026373805,0.35488943400602146

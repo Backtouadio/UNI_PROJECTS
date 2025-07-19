@@ -1,0 +1,71 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+
+#define SHARED_MEMORY_SIZE 20 // Size for emotional state string
+#define SEMAPHORE_NAME "/emotion_semaphore"
+
+// Global variables for shared resources
+char *sharedEmotion;
+sem_t *mutex;
+
+// Function prototypes
+void *controllerThread();
+
+int main() {
+    // Create shared memory for emotional state
+    int shm_fd = shm_open("/emotion_state", O_CREAT | O_RDWR, 0666);
+    sharedEmotion = mmap(NULL, SHARED_MEMORY_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+    // Initialize semaphore
+    mutex = sem_open(SEMAPHORE_NAME, 0); // Open existing semaphore
+
+    // Create controller thread
+    pthread_t controllerThreadID;
+    pthread_create(&controllerThreadID, NULL, controllerThread, NULL);
+
+    // Wait for controller thread to finish
+    pthread_join(controllerThreadID, NULL);
+
+    // Close resources
+    sem_close(mutex);
+
+    return 0;
+}
+
+void *controllerThread() {
+    char currentEmotion[20] = "";
+    while (1) {
+        // Acquire lock
+        sem_wait(mutex);
+
+        // Read shared emotional state
+        char newEmotion[20];
+        strcpy(newEmotion, sharedEmotion);
+
+        // Release lock
+        sem_post(mutex);
+
+        // Display emotional state if it has changed
+        if (strcmp(newEmotion, currentEmotion) != 0) {
+            printf("Emotional state: %s\n", newEmotion);
+            strcpy(currentEmotion, newEmotion);
+        }
+
+        // Check for termination condition
+        if (strcmp(newEmotion, "depressed") == 0) {
+            printf("Exiting...\n");
+            break;
+        }
+
+        // Sleep for a while
+        sleep(1);
+    }
+    return NULL;
+}
+

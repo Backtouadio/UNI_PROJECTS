@@ -1,0 +1,124 @@
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+
+// Structure to represent an internal process
+typedef struct {
+    int value;          // Current value of the process
+    int lower_limit;    // Lower limit of the process
+    int upper_limit;    // Upper limit of the process
+    float variation_rate; // Variation rate of the process
+    int ideal_value;    // Ideal value of the process
+    int inverse_variation;	// Refilling values
+    int deficit;	//Deficit
+} InternalProcess;
+
+void initializeProcesses(InternalProcess *processes) {
+    //sleep process
+    processes[0].value = 0;
+    processes[0].lower_limit = 0;
+    processes[0].upper_limit = 100;
+    processes[0].variation_rate = 2;
+    processes[0].ideal_value = 0;
+    processes[0].inverse_variation = -4;
+    processes[0].deficit = 0;
+
+    //feeding process
+    processes[1].value = 100;
+    processes[1].lower_limit = 0;
+    processes[1].upper_limit = 100;
+    processes[1].variation_rate = -4;
+    processes[1].ideal_value = 100;
+    processes[1].inverse_variation = 8;
+    processes[1].deficit = 0;
+
+    //affection process(our robot needs affection).
+    processes[2].value = 100;
+    processes[2].lower_limit = 0;
+    processes[2].upper_limit = 100;
+    processes[2].variation_rate = -1;
+    processes[2].ideal_value = 100;
+    processes[2].inverse_variation = 2;
+    processes[2].deficit = 0;
+}
+
+void printClockInfo() {
+    time_t rawtime;
+    struct tm *info;
+    time(&rawtime);
+    info = localtime(&rawtime);
+    printf("Timestamp: %s", asctime(info));
+}
+
+void updateProcesses(InternalProcess *processes) {
+    int deficit;
+    for (int i = 0; i < 3; i++) {	//checking that is inside limit
+        processes[i].value += processes[i].variation_rate;
+        if (processes[i].value < processes[i].lower_limit)
+            processes[i].value = processes[i].lower_limit;
+        else if (processes[i].value > processes[i].upper_limit)
+            processes[i].value = processes[i].upper_limit;
+        deficit = processes[i].ideal_value - processes[i].value;
+        if(deficit < 0 ){
+            deficit = deficit * (-1);	//the deficit remains a positive value.
+        }
+        processes[i].deficit = deficit;
+    }
+}
+
+void printProcesses(InternalProcess *processes) {
+    printf("Sleepness: %d ; Deficit: %d.\nFood level: %d; Deficit: %d.\nAffection: %d;  Deficit: %d.\n\n\n",
+           processes[0].value, processes[0].deficit, processes[1].value, processes[1].deficit, processes[2].value, processes[2].deficit);
+}
+
+void refillProcesses(InternalProcess *processes) {		//refill or improve internal state.
+    int deficit_max = processes[0].deficit;
+    int n_process = 0;
+
+    for (int i = 1; i < 3; i++) {		//check biguest deficet
+        if (processes[i].deficit > deficit_max) {
+            deficit_max = processes[i].deficit;
+            n_process = i;
+        }
+    }
+
+    int new_value = processes[n_process].value + processes[n_process].inverse_variation;
+    if (new_value <= processes[n_process].upper_limit && new_value >= processes[n_process].lower_limit) {
+        processes[n_process].value = new_value; 	// Only update value if after refill final value is within limits
+        printf("\n***REFILLED!***\n");
+        printClockInfo();
+    }
+}
+
+
+
+int main() {
+    srand(time(NULL)); // Seed for random number generation
+
+    InternalProcess processes[3];	//array of processes
+    initializeProcesses(processes);
+    printClockInfo();
+
+    struct timespec currentTime, sleepTime;
+    clock_gettime(CLOCK_REALTIME, &currentTime);
+
+    while (1) {
+        int randomNumber = rand() % 2 + 1; // Generates either 1 or 2
+        if (randomNumber == 2) {	//i didnt know how to simulate an intelligent robot so i made it random.
+        
+            refillProcesses(processes);
+        }
+
+        // update processes
+        updateProcesses(processes);
+
+        // print processes and deficits
+        printProcesses(processes);
+
+        sleepTime.tv_sec = 0;
+        sleepTime.tv_nsec = 500000000; // 0.5 seconds
+        nanosleep(&sleepTime, NULL);
+    }
+
+    return 0;
+}

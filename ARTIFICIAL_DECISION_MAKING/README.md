@@ -1,0 +1,1 @@
+Worked with binary trees, game theory based, markov decision problems, and we simulated in the last lab the movement, actions and decisions made by an bioinspired robot, this meaning its internal equilibrium decisions are also affected by its external stimuli.

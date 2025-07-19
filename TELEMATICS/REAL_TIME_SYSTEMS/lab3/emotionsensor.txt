@@ -1,0 +1,69 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+
+#define SHARED_MEMORY_SIZE 20 // Size for emotional state string
+#define SEMAPHORE_NAME "/emotion_semaphore"
+
+// Global variables for shared resources
+char *sharedEmotion;
+sem_t *mutex;
+
+// Function prototypes
+void *sensorThread();
+
+int main() {
+    // Create shared memory for emotional state
+    int shm_fd = shm_open("/emotion_state", O_CREAT | O_RDWR, 0666);
+    ftruncate(shm_fd, SHARED_MEMORY_SIZE);
+    sharedEmotion = mmap(NULL, SHARED_MEMORY_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    strcpy(sharedEmotion, "neutral"); // Initialize emotional state as neutral
+
+    // Initialize semaphore
+    sem_unlink(SEMAPHORE_NAME); // Unlink in case semaphore already exists
+    mutex = sem_open(SEMAPHORE_NAME, O_CREAT, 0666, 1); // Initialize semaphore
+
+    // Create sensor thread
+    pthread_t sensorThreadID;
+    pthread_create(&sensorThreadID, NULL, sensorThread, NULL);
+
+    // Wait for sensor thread to finish
+    pthread_join(sensorThreadID, NULL);
+
+    // Close and unlink resources
+    sem_close(mutex);
+    sem_unlink(SEMAPHORE_NAME);
+    shm_unlink("/emotion_state");
+
+    return 0;
+}
+
+void *sensorThread() {
+    char input[20];
+    while (1) {
+        printf("Enter emotional state (happy, sad, neutral): ");
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = 0; // Remove trailing newline
+
+        // Acquire lock
+        sem_wait(mutex);
+
+        // Update shared emotional state
+        strcpy(sharedEmotion, input);
+
+        // Release lock
+        sem_post(mutex);
+
+        // Check for termination condition
+        if (strcmp(input, "depressed") == 0) {
+            printf("Exiting...\n");
+            break;
+        }
+    }
+    return NULL;
+}
